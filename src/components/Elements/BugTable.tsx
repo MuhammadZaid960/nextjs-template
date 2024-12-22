@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Table,
   TableHeader,
@@ -6,14 +6,10 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  TableProps,
 } from "@nextui-org/table";
 import { Input } from "@nextui-org/input";
-
-export const statusColorMap = {
-  active: "success",
-  paused: "danger",
-  vacation: "warning",
-};
+import BugPagination from "./BugPagination";
 
 export type TableColumnType<T> = {
   name: string;
@@ -22,41 +18,72 @@ export type TableColumnType<T> = {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type BugTableProps<T extends Record<string, any>> = {
+interface BugTableProps<T extends Record<string, any>> extends TableProps {
   columns: TableColumnType<T>[];
   data: T[];
   searchPlaceholder?: string;
-};
+  isPagination?: boolean;
+  dataPerPage?: number;
+  isSearch?: boolean;
+}
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const BugTable = <T extends Record<string, any>>({
   columns,
   data,
   searchPlaceholder = "Search...",
+  isPagination = false,
+  dataPerPage = 10,
+  isSearch = false,
+  ...props
 }: BugTableProps<T>) => {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchValue, setSearchValue] = useState("");
+  const [currentPage, setCurrentPage] = React.useState(1);
+  useEffect(() => {
+    if (!searchValue) return;
+    setCurrentPage(1);
+  }, [searchValue]);
+  const dataToShow = isPagination
+    ? data.slice((currentPage - 1) * dataPerPage, currentPage * dataPerPage)
+    : data;
 
   const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
+    if (!searchValue) return dataToShow;
 
-    return data.filter((item) =>
+    return dataToShow.filter((item) =>
       Object.values(item).some((value) => {
         if (typeof value === "string") {
-          return value.toLowerCase().includes(searchTerm.toLowerCase());
+          return value.toLowerCase().includes(searchValue.toLowerCase());
         }
         return false;
       })
     );
-  }, [searchTerm, data]);
+  }, [searchValue, dataToShow]);
 
   return (
     <div>
-      <Input
-        placeholder={searchPlaceholder}
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="mb-4"
-      />
-      <Table aria-label="Dynamic table with search" color="default">
+      {isSearch && (
+        <Input
+          placeholder={searchPlaceholder}
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          className="mb-4"
+        />
+      )}
+      <Table
+        aria-label="Dynamic table with search"
+        {...props}
+        bottomContent={
+          <div className="flex w-full justify-center">
+            {isPagination && (
+              <BugPagination
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                total={data.length}
+              />
+            )}
+          </div>
+        }
+      >
         <TableHeader columns={columns}>
           {(column) => (
             <TableColumn key={String(column.uid)}>{column.name}</TableColumn>

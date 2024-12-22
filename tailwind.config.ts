@@ -15,5 +15,12 @@ export default {
       },
     },
   },
+  "compilerOptions": {
+    "jsx": "react-jsx",  
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "strict": true,
+    "target": "ESNext"
+  },
   plugins: [nextui()],
 } satisfies Config;
